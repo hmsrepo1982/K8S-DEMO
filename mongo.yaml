@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment # name for deployment
+  labels:
+    app: mongo #unique name, good practice to use.
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo # unique lable which identifies. matches the template name to group
+  template:      #1.blueprint to configure containers as pods
+    metadata:
+      labels:
+        app: mongo # unique label/identifier for template. each pods will share same name. req field for template.
+    spec:
+      containers:
+      - name: mongodb # AppName Referece.
+        image: mongo:5.0 # this is where docker image
+        ports:
+        - containerPort: 27017 #where mongo service would run
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME    # this container needs UN and Pwd at startup.
+          valueFrom:                          # Pass env variables as indicated below.
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user                 # value will be picked from secret file.
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service # via this service mongodb will be accessed.
+spec:
+  selector:
+    app.kubernetes.io/name: mongo # service will find pods by this name.
+  ports:
+    - protocol: TCP
+      port: 27017 # where request enters and forwards to target port.best practice.
+      targetPort: 27017  # where service would run.
